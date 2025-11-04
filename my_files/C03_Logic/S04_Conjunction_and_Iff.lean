@@ -63,8 +63,12 @@ example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x := by
 example {x y : ℝ} (h : x ≤ y ∧ x ≠ y) : ¬y ≤ x :=
   fun h' ↦ h.right (le_antisymm h.left h')
 
-example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m :=
-  sorry
+example {m n : ℕ} (h : m ∣ n ∧ m ≠ n) : m ∣ n ∧ ¬n ∣ m := by
+  obtain ⟨hl, hr⟩ := h
+  constructor
+  . assumption
+  . contrapose! hr
+    exact dvd_antisymm hl hr
 
 example : ∃ x : ℝ, 2 < x ∧ x < 4 :=
   ⟨5 / 2, by norm_num, by norm_num⟩
@@ -102,14 +106,23 @@ example {x y : ℝ} (h : x ≤ y) : ¬y ≤ x ↔ x ≠ y :=
   ⟨fun h₀ h₁ ↦ h₀ (by rw [h₁]), fun h₀ h₁ ↦ h₀ (le_antisymm h h₁)⟩
 
 example {x y : ℝ} : x ≤ y ∧ ¬y ≤ x ↔ x ≤ y ∧ x ≠ y :=
-  sorry
+  ⟨fun h ↦ ⟨h.left, fun h₁ ↦ h.right (by rw [h₁])⟩, fun h ↦ ⟨h.left, (not_le_of_lt (lt_of_le_of_ne h.left h.right))⟩⟩
 
 theorem aux {x y : ℝ} (h : x ^ 2 + y ^ 2 = 0) : x = 0 :=
-  have h' : x ^ 2 = 0 := by sorry
+  have h' : x ^ 2 = 0 := by
+    apply eq_of_le_of_le
+    calc
+      x ^ 2 ≤ x ^ 2 + y ^ 2 := by
+        nth_rewrite 1 [← add_zero (x ^ 2)]
+        apply add_le_add_left
+        exact pow_two_nonneg y
+      _ = 0 := by assumption
+    exact pow_two_nonneg x
   pow_eq_zero h'
 
 example (x y : ℝ) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 :=
-  sorry
+  ⟨fun h ↦ ⟨aux h, by rw [aux h, zero_pow (by linarith), zero_add] at h; exact pow_eq_zero h⟩,
+  fun h ↦ by rw [h.left, h.right]; linarith⟩
 
 section
 
@@ -130,7 +143,13 @@ theorem not_monotone_iff {f : ℝ → ℝ} : ¬Monotone f ↔ ∃ x y, x ≤ y �
   rfl
 
 example : ¬Monotone fun x : ℝ ↦ -x := by
-  sorry
+  rw [Monotone]
+  push_neg
+  by_contra h
+  apply h
+  use 0
+  use 1
+  constructor <;> linarith
 
 section
 variable {α : Type*} [PartialOrder α]
@@ -138,7 +157,8 @@ variable (a b : α)
 
 example : a < b ↔ a ≤ b ∧ a ≠ b := by
   rw [lt_iff_le_not_le]
-  sorry
+  exact ⟨fun h ↦ ⟨h.left, ne_of_lt (lt_of_le_not_le h.left h.right)⟩,
+    fun h ↦ ⟨h.left, fun h' ↦ h.right (le_antisymm h.left h')⟩⟩
 
 end
 
@@ -148,10 +168,10 @@ variable (a b c : α)
 
 example : ¬a < a := by
   rw [lt_iff_le_not_le]
-  sorry
+  exact fun ⟨l, r⟩ ↦ r l
 
 example : a < b → b < c → a < c := by
   simp only [lt_iff_le_not_le]
-  sorry
+  exact fun ⟨h1, h2⟩ ↦ fun ⟨h3, h4⟩ ↦ ⟨le_trans h1 h3, fun h5 ↦ h4 (le_trans h5 h1)⟩
 
 end
