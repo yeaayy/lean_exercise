@@ -179,7 +179,15 @@ end Int
 
 theorem sq_add_sq_eq_zero {α : Type*} [Ring α] [LinearOrder α] [IsStrictOrderedRing α]
     (x y : α) : x ^ 2 + y ^ 2 = 0 ↔ x = 0 ∧ y = 0 := by
-  sorry
+  constructor
+  intro h
+  rw [add_eq_zero_iff_eq_neg] at h
+  exact ⟨
+    pow_eq_zero (le_antisymm (by rw [← neg_zero, h, neg_le_neg_iff]; exact pow_two_nonneg _) (pow_two_nonneg _)),
+    pow_eq_zero (le_antisymm (by rw [← neg_zero, le_neg, ← h]; exact pow_two_nonneg _) (pow_two_nonneg y))
+  ⟩
+  intro h
+  rw [h.1, h.2, zero_pow two_ne_zero, add_zero]
 namespace GaussInt
 
 def norm (x : GaussInt) :=
@@ -187,13 +195,34 @@ def norm (x : GaussInt) :=
 
 @[simp]
 theorem norm_nonneg (x : GaussInt) : 0 ≤ norm x := by
-  sorry
+  exact add_nonneg (pow_two_nonneg _) (pow_two_nonneg _)
+
 theorem norm_eq_zero (x : GaussInt) : norm x = 0 ↔ x = 0 := by
-  sorry
+  unfold norm
+  rw [sq_add_sq_eq_zero, GaussInt.zero_def]
+  exact ⟨fun ⟨hr, hi⟩ => by ext <;> simpa, fun h => by rw [h]; simp⟩
+
 theorem norm_pos (x : GaussInt) : 0 < norm x ↔ x ≠ 0 := by
-  sorry
+  unfold norm
+  rw [zero_def]
+  refine ⟨fun h1 h2 => by rw [h2] at h1; simp at h1, ?_⟩
+  intro h
+  refine Or.elim (?_ : x.re ≠ 0 ∨ x.im ≠ 0)
+    (fun h => add_pos_of_pos_of_nonneg (pow_two_pos_of_ne_zero h) (pow_two_nonneg _))
+    (fun h => add_pos_of_nonneg_of_pos (pow_two_nonneg _) (pow_two_pos_of_ne_zero h))
+  contrapose! h
+  ext
+  exact h.1
+  exact h.2
+
 theorem norm_mul (x y : GaussInt) : norm (x * y) = norm x * norm y := by
-  sorry
+  unfold norm
+  rw [mul_re, mul_im, sub_pow_two, add_pow_two, sub_eq_add_neg]
+  move_add [2 * _ * _, -(2 * _ * _)]
+  move_mul [y.re, y.im]
+  rw [add_neg_cancel_right, ]
+  linarith
+
 def conj (x : GaussInt) : GaussInt :=
   ⟨x.re, -x.im⟩
 
