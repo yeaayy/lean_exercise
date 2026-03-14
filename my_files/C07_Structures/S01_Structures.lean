@@ -81,14 +81,16 @@ theorem addAlt_comm (a b : Point) : addAlt a b = addAlt b a := by
   repeat' apply add_comm
 
 protected theorem add_assoc (a b c : Point) : (a.add b).add c = a.add (b.add c) := by
-  sorry
+  unfold add
+  simp [add_assoc]
 
 def smul (r : ℝ) (a : Point) : Point :=
-  sorry
+  ⟨r * a.x, r * a.y, r * a.z⟩
 
 theorem smul_distrib (r : ℝ) (a b : Point) :
     (smul r a).add (smul r b) = smul r (a.add b) := by
-  sorry
+  unfold smul add
+  simp [mul_add]
 
 end Point
 
@@ -126,8 +128,21 @@ def midpoint (a b : StandardTwoSimplex) : StandardTwoSimplex
   sum_eq := by field_simp; linarith [a.sum_eq, b.sum_eq]
 
 def weightedAverage (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
-    (a b : StandardTwoSimplex) : StandardTwoSimplex :=
-  sorry
+    (a b : StandardTwoSimplex) : StandardTwoSimplex
+    where
+  x := lambda * a.x + (1 - lambda) * b.x
+  y := lambda * a.y + (1 - lambda) * b.y
+  z := lambda * a.z + (1 - lambda) * b.z
+  x_nonneg := add_nonneg (mul_nonneg lambda_nonneg a.x_nonneg) (mul_nonneg (by rwa [le_sub_iff_add_le, zero_add]) b.x_nonneg)
+  y_nonneg := add_nonneg (mul_nonneg lambda_nonneg a.y_nonneg) (mul_nonneg (by rwa [le_sub_iff_add_le, zero_add]) b.y_nonneg)
+  z_nonneg := add_nonneg (mul_nonneg lambda_nonneg a.z_nonneg) (mul_nonneg (by rwa [le_sub_iff_add_le, zero_add]) b.z_nonneg)
+  sum_eq := by
+    move_add [lambda * a.x, lambda * a.y, lambda * a.z]
+    repeat rw [← mul_add]
+    rw [b.sum_eq, mul_one]
+    move_add [1 - lambda]
+    repeat rw [← mul_add]
+    rw [a.sum_eq, mul_one, add_sub_cancel]
 
 end
 
@@ -154,6 +169,13 @@ def midpoint (n : ℕ) (a b : StandardSimplex n) : StandardSimplex n
     simp [div_eq_mul_inv, ← Finset.sum_mul, Finset.sum_add_distrib,
       a.sum_eq_one, b.sum_eq_one]
     field_simp
+
+def weightedAverage (n : ℕ) (lambda : Real) (lambda_nonneg : 0 ≤ lambda) (lambda_le : lambda ≤ 1)
+    (a b : StandardSimplex n) : StandardSimplex n
+    where
+    V := fun x ↦ lambda * a.V x + (1 - lambda) * b.V x
+    NonNeg := fun x ↦ add_nonneg (mul_nonneg lambda_nonneg (a.NonNeg x)) (mul_nonneg (by rwa [le_sub_iff_add_le, zero_add]) (b.NonNeg x))
+    sum_eq_one := by rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← Finset.mul_sum, a.sum_eq_one, b.sum_eq_one, mul_one, mul_one, add_sub_cancel]
 
 end StandardSimplex
 
@@ -206,4 +228,3 @@ variable (s : StdSimplex)
 #check s.2
 
 end
-
